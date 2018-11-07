@@ -10,6 +10,8 @@ vector<string> aritmetical_functions;
 vector<string> conditional_functions;
 vector<string> parameterless_functions;
 
+
+
 //Initiate the possible program commands
 void fill_parameters() {
 
@@ -98,12 +100,14 @@ int comand_div(int a, int b) {
 
 	if (b == 0)
 		return 0;
-	return (a/b);
+	return (a / b);
 }
 
 //Executing the command of mod
 int comand_mod(int a, int b) {
-
+	
+	if (b == 0)
+		return 0;
 	return a % b;
 }
 
@@ -212,11 +216,11 @@ int RunTwoParametersFunction(string function_name, map<string, int> local_variab
 
 	it = local_variables.find(a);
 	int var1 = it->second;
-	   
+
 	if (function_name.compare("MOV") == 0)
 		it->second = comand_mov(var1, var2);
 
-	else if(function_name.compare("ADD") == 0)
+	else if (function_name.compare("ADD") == 0)
 		it->second = comand_add(var1, var2);
 
 	else if (function_name.compare("SUB") == 0)
@@ -235,23 +239,52 @@ int RunTwoParametersFunction(string function_name, map<string, int> local_variab
 
 }
 
+bool runConditionals(string function_name, map<string, int> local_variables, int var1, int var2) {
+
+	bool aux;
+
+	if (function_name.compare("IFEQ") == 0)
+		aux = comand_ifeq(var1, var2);
+
+	else if (function_name.compare("IFNEQ") == 0)
+		aux = comand_ifneq(var1, var2);
+
+	else if (function_name.compare("IFG") == 0)
+		aux = comand_ifg(var1, var2);
+
+	else if (function_name.compare("IFL") == 0)
+		aux = comand_ifl(var1, var2);
+
+	else if (function_name.compare("IFGE") == 0)
+		aux = comand_ifge(var1, var2);
+
+	else if (function_name.compare("IFLE") == 0)
+		aux = comand_ifle(var1, var2);
+
+	return aux;
+
+}
+
 //str1.compare(str2) != 0)
-void runProgram(vector<pair<string, string>> program_lines, int n) {
+int runProgram(vector<pair<string, string>> program_lines, int n) {
 
 	map<string, int> local_variables;
 	local_variables = fill_variables(n);
 	map<string, int>::iterator it;
 
+	//check if the function already entered in an if function.
+	bool if_counter = true;
+
 	for (int i = 0; i < program_lines.size(); i++) {
 
-		cout << program_lines.at(i).first << " ";
+		//cout << program_lines.at(i).first << " ";
 
-		if (find(aritmetical_functions.begin(), aritmetical_functions.end(), program_lines.at(i).first) != aritmetical_functions.end()) {
-			
-			cout << program_lines.at(i).first << " ";
-			
+		if ((find(aritmetical_functions.begin(), aritmetical_functions.end(), program_lines.at(i).first) != aritmetical_functions.end()) && if_counter) {
+
+			//cout << program_lines.at(i).first << " ";
+
 			pair<string, string> function_variables = splitString(program_lines.at(i).second, ",");
-			
+
 			it = local_variables.find(function_variables.second);
 			int var2;
 			if (it != local_variables.end())
@@ -260,25 +293,78 @@ void runProgram(vector<pair<string, string>> program_lines, int n) {
 				var2 = stoi(function_variables.second);
 
 			it = local_variables.find(function_variables.first);
-			
-			cout << function_variables.first << " " << function_variables.second << " ";
-			
+
+			//cout << function_variables.first << " " << function_variables.second << " ";
+
 			it->second = RunTwoParametersFunction(program_lines.at(i).first, local_variables, function_variables.first, var2);
-			
-			cout << it->first<<"="<<it->second<<endl;
-		
+
+			//cout << it->first << "=" << it->second << endl;
+
 		}
-		else if (program_lines.at(i).first.compare("RET") == 0) {
+		else if((find(conditional_functions.begin(), conditional_functions.end(), program_lines.at(i).first) != conditional_functions.end()) && if_counter){
+
+			bool enter_if = false;
+
+			//If it enters in the if, following subsequent the program lines, if it does not, it looks for the next endif.
+			//cout << program_lines.at(i).first << " ";
+			pair<string, string> function_variables = splitString(program_lines.at(i).second, ",");
+
+			it = local_variables.find(function_variables.first);
+			int var1;
+
+			if (it != local_variables.end())
+				var1 = it->second;
+			else
+				var1 = stoi(function_variables.first);
+
+			it = local_variables.find(function_variables.second);
+			int var2;
+
+			if (it != local_variables.end())
+				var2 = it->second;
+			else
+				var2 = stoi(function_variables.second);
+
+			enter_if = runConditionals(program_lines.at(i).first, local_variables, var1, var2);
+
+			if (!enter_if)
+				if_counter = false;
+		}
+
+		else if (program_lines.at(i).first.compare("ENDIF") == 0) {
+
+			if_counter = true;
+
+		}
+
+		else if (program_lines.at(i).first.compare("RET") == 0 && if_counter) {
+
 
 			it = local_variables.find(program_lines.at(i).second);
-			int aux = it->second;
-			it = local_variables.find("R9");
-			it->second = aux;
-			cout << "RETORNA:" << aux;
+			int var2;
+
+			if (it != local_variables.end())
+				var2 = it->second;
+			else
+				var2 = stoi(program_lines.at(i).second);
+
+			return var2;
 
 		}
-		else {
-			cout << "nao tratado ainda" << endl;
+
+		else if(program_lines.at(i).first.compare("CALL") == 0 && if_counter){
+			
+			it = local_variables.find(program_lines.at(i).second);
+			int var;
+
+			if (it != local_variables.end())
+				var = it->second;
+			else
+				var = stoi(program_lines.at(i).second);
+
+			it = local_variables.find("R9");
+			it->second = runProgram(program_lines, var);
+
 		}
 
 	}
@@ -289,17 +375,24 @@ void getIteration() {
 
 	int l = 1, n = 1;
 
-	while (l != 0 && n != 0) {
+	pair<string, string> line = getLine();
+	l = stoi(line.first);
+	n = stoi(line.second);
+	vector<pair<string, string>> program_lines;
 
-		pair<string, string> line = getLine();
-		l = stoi(line.first);
-		n = stoi(line.second);
-		vector<pair<string, string>> program_lines;
+	while (l != 0 || n != 0) {		
 
 		for (int i = 0; i < l; i++)
 			program_lines.push_back(getLine());
 
-		runProgram(program_lines, n);
+		int i = runProgram(program_lines, n);
+
+		cout << i << endl;
+
+		pair<string, string> line = getLine();
+		l = stoi(line.first);
+		n = stoi(line.second);
+		program_lines.clear();
 
 	}
 }
