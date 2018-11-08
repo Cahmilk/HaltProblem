@@ -1,7 +1,6 @@
 / HaltingProblem.cpp : Este arquivo contém a função 'main'. A execução do programa começa e termina ali.
 //
 
-#include "pch.h"
 #include <string>
 #include <iostream>
 #include <vector>
